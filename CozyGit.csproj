@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">DebugInternalDLL</Configuration>
+    <Platform Condition="'$(Platform)'==''">x64</Platform>
+    <ProjectGuid>{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}</ProjectGuid>
+    <RootNamespace>CozyGit</RootNamespace>
+    <AssemblyName>CozyGit</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <ApplicationIcon>CozyGit.ico</ApplicationIcon>
+    <Install>false</Install>
+    <UpdateEnabled>false</UpdateEnabled>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>false</BootstrapperEnabled>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <ErrorReport>none</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>$(Platform)</PlatformTarget>
+    <StartupObject>CozyGit.Program</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugInternalDLL'">
+    <DefineConstants>DEBUG;LIBGIT2_USE_INTERNAL_DLL;PLATFORM_$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugExternalDLL'">
+    <DefineConstants>DEBUG;PLATFORM_$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'DebugInternalDLL' Or '$(Configuration)' == 'DebugExternalDLL'">
+    <OutputPath>Debug\</OutputPath>
+    <IntermediateOutputPath>$(OutputPath)</IntermediateOutputPath>
+    <OutputType>Exe</OutputType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'ReleaseInternalDLL'">
+    <OutputPath>Release\InternalDLL$(Platform)\</OutputPath>
+    <DefineConstants>LIBGIT2_USE_INTERNAL_DLL;PLATFORM_$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'ReleaseExternalDLL'">
+    <OutputPath>Release\ExternalDLL$(Platform)\</OutputPath>
+    <DefineConstants>PLATFORM_$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'ReleaseExternalDLL' Or '$(Configuration)' == 'ReleaseInternalDLL'">
+    <IntermediateOutputPath>$(OutputPath)</IntermediateOutputPath>
+    <OutputType>WinExe</OutputType>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseInternalDLL|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseInternalDLL|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseExternalDLL|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseExternalDLL|x64'" />
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Compile Include="FormInput.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormClone.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DLLFromMemory.cs" />
+    <Compile Include="FormCommit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LibGit2Sharp.cs" />
+    <Compile Include="Data.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Data.resx</DependentUpon>
+    </Compile>
+    <Compile Include="CozyGit.cs" />
+    <EmbeddedResource Include="Data.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Data.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LibGit2x64.resx" Condition="'$(Configuration)|$(Platform)' == 'DebugInternalDLL|x64' Or '$(Configuration)|$(Platform)' == 'ReleaseInternalDLL|x64'">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LibGit2x86.resx" Condition="'$(Configuration)|$(Platform)' == 'DebugInternalDLL|x86' Or '$(Configuration)|$(Platform)' == 'ReleaseInternalDLL|x86'">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,0 +1,6 @@
+Debug/
+Release/
+.vs/
+*.suo
+*.user
+*.aps

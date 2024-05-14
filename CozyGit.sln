@@ -1,0 +1,39 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CozyGit", "CozyGit.csproj", "{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		DebugInternalDLL|x64 = DebugInternalDLL|x64
+		DebugInternalDLL|x86 = DebugInternalDLL|x86
+		DebugExternalDLL|x64 = DebugExternalDLL|x64
+		DebugExternalDLL|x86 = DebugExternalDLL|x86
+		ReleaseInternalDLL|x64 = ReleaseInternalDLL|x64
+		ReleaseInternalDLL|x86 = ReleaseInternalDLL|x86
+		ReleaseExternalDLL|x64 = ReleaseExternalDLL|x64
+		ReleaseExternalDLL|x86 = ReleaseExternalDLL|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugInternalDLL|x64.ActiveCfg = DebugInternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugInternalDLL|x64.Build.0 = DebugInternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugInternalDLL|x86.ActiveCfg = DebugInternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugInternalDLL|x86.Build.0 = DebugInternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugExternalDLL|x64.ActiveCfg = DebugExternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugExternalDLL|x64.Build.0 = DebugExternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugExternalDLL|x86.ActiveCfg = DebugExternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.DebugExternalDLL|x86.Build.0 = DebugExternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseInternalDLL|x64.ActiveCfg = ReleaseInternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseInternalDLL|x64.Build.0 = ReleaseInternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseInternalDLL|x86.ActiveCfg = ReleaseInternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseInternalDLL|x86.Build.0 = ReleaseInternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseExternalDLL|x64.ActiveCfg = ReleaseExternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseExternalDLL|x64.Build.0 = ReleaseExternalDLL|x64
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseExternalDLL|x86.ActiveCfg = ReleaseExternalDLL|x86
+		{FFFFFFFF-FFFF-4FFF-FFFF-FFFFFFFFFFF0}.ReleaseExternalDLL|x86.Build.0 = ReleaseExternalDLL|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
