@@ -30033,9 +30033,9 @@ namespace LibGit2Sharp.Core
     {
 #endif
         #if PLATFORM_x64
-        private const string libgit2 = "libgit2-x64";
+        private const string libgit2 = "libgit2-x64.dll";
         #elif PLATFORM_x86
-        private const string libgit2 = "libgit2-x86";
+        private const string libgit2 = "libgit2-x86.dll";
         #else
         #error Unknown platform
         #endif

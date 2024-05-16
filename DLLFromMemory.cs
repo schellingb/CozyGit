@@ -39,7 +39,7 @@
  *
  */
 
-#if !LIBGIT2_USE_EXTERNAL_DLL
+#if LIBGIT2_USE_INTERNAL_DLL
 using System;
 using System.Runtime.InteropServices;
 
