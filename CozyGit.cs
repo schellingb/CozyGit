@@ -8,8 +8,8 @@ using LibGit2Sharp;
 
 [assembly: System.Reflection.AssemblyTitle("CozyGit")]
 [assembly: System.Reflection.AssemblyProduct("CozyGit")]
-[assembly: System.Reflection.AssemblyVersion("0.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.1.0")]
+[assembly: System.Reflection.AssemblyVersion("0.1.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.1.0.0")]
 [assembly: System.Reflection.AssemblyCopyright("(C) 2024 Bernhard Schelling")]
 [assembly: System.Runtime.InteropServices.ComVisible(false)]
 
@@ -282,7 +282,7 @@ public static class Program
         }
         catch (System.Exception e) { return ExceptionError(e, "Unknown error while trying to open repository directory '" + path  + "'"); }
 
-        try { Remote repoRemote = repo.Network.Remotes.RemoteForName("origin"); if (repoRemote != null) f.lnkRemoteRepository.Text = repoRemote.PushUrl; } catch { }
+        try { Remote repoRemote = repo.Network.Remotes["origin"]; if (repoRemote != null) f.lnkRemoteRepository.Text = repoRemote.PushUrl; } catch { }
         try { Branch head = repo.Head; if (head != null && head.Tip != null) f.lnkBranch.Text = head.FriendlyName; } catch { }
         return null;
     }
@@ -443,7 +443,7 @@ public static class Program
 
     static bool SynchronizeWithRemote() // return if push/pull/reset succeeded
     {
-        Remote repoRemote = repo.Network.Remotes.RemoteForName("origin");
+        Remote repoRemote = repo.Network.Remotes["origin"];
         Branch repoHeadBranch = repo.Head, repoTrackedHeadBranch = repoHeadBranch.TrackedBranch;
         if (repoRemote == null || repoTrackedHeadBranch == null)
             { MessageBox.Show(f, "Unknown error while trying to open repository directory '" + repo.Info.WorkingDirectory  + "':\n\n" + "Repository has no remote " + (repoRemote == null ? "origin" : "tracked branch"), "CozyGit - Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return false; }
@@ -811,7 +811,7 @@ public static class Program
         if ((fileStatus & FileStatus.NewInWorkdir) != 0) return null;
         Commit tip = (getRemote ? repo.Head.TrackedBranch : repo.Head).Tip;
         TreeEntry treeEntry = (tip == null ? null : tip[fileRelPath]);
-        return (treeEntry == null ? null : repo.Lookup<Blob>(treeEntry.TargetId));
+        return (treeEntry != null && treeEntry.TargetType == TreeEntryTargetType.Blob ? (Blob)treeEntry.Target : null);
     }
 
     static void RunDiff(string src_path, string dst_path)
@@ -1032,7 +1032,7 @@ public static class Program
         {
             Commit cFrom = MinCommit.Parents.GetFirstElement(), cTo = MaxCommit;
             TreeEntry teFrom = (cFrom == null ? null : cFrom[Path]), teTo = (cTo == null ? null : cTo[Path]);
-            Blob blobFrom = (teFrom == null ? null : repo.Lookup<Blob>(teFrom.TargetId)), blobTo = (teTo == null ? null : repo.Lookup<Blob>(teTo.TargetId));
+            Blob blobFrom = (teFrom != null && teFrom.TargetType == TreeEntryTargetType.Blob ? (Blob)teFrom.Target : null), blobTo = (teTo != null && teTo.TargetType == TreeEntryTargetType.Blob ? (Blob)teTo.Target : null);
             ShowDiff(blobFrom, blobTo, Path);
         }
     };
