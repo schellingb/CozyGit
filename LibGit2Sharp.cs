@@ -13,6 +13,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //#define LEAKS_IDENTIFYING
 //#define LEAKS_TRACKING
 
+#if LIBGIT2SHARP_DLL
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("CozyGit")]
+[assembly: System.Reflection.AssemblyTitle("LibGit2Sharp")]
+[assembly: System.Reflection.AssemblyProduct("LibGit2Sharp")]
+[assembly: System.Reflection.AssemblyVersion("0.30.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.30.0.0")]
+[assembly: System.Reflection.AssemblyCopyright("(C) LibGit2Sharp contributors")]
+[assembly: System.Runtime.InteropServices.ComVisible(false)]
+#endif
+
 namespace LibGit2Sharp
 {
     using LibGit2Sharp.Core.Handles;
