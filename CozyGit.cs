@@ -119,6 +119,7 @@ public static class Program
         f.KeyDown += (object sender, KeyEventArgs e) =>
         {
             if (e.KeyCode == Keys.F5) { f.btnRefresh.PerformClick(); e.Handled = true; }
+            if (e.KeyCode == Keys.Enter && e.Control) { btnOK_Click(null, null); e.Handled = true; }
         };
 
         f.gridMain.ColumnHeaderMouseClick       += el.GridOnColumnHeaderClick;
@@ -579,6 +580,7 @@ public static class Program
 
     static void btnOK_Click(object o, EventArgs a)
     {
+        if (!f.btnOK.Enabled) { MessageBox.Show(f, "Cannot commit without any selected changes", "CozyGit - Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         f.splitMain.Enabled = false;
 
         Branch repoHeadBranch = repo.Head, repoTrackedHeadBranch = repoHeadBranch.TrackedBranch;
