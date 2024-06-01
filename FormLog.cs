@@ -256,6 +256,7 @@ namespace CozyGit
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnClearFilter);
             this.Controls.Add(this.lblFooter);
+            this.KeyPreview = true;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "FormLog";

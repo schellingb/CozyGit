@@ -107,13 +107,7 @@ public static class Program
                 if (el[(i + off) % el.Count].Path.StartsWith(searchBuf, StringComparison.CurrentCultureIgnoreCase))
                     { f.gridMain.ClearSelection(); f.gridMain.CurrentCell = f.gridMain.Rows[(i + off) % el.Count].Cells[3]; f.gridMain.CurrentRow.Selected = true; return; }
         };
-        f.gridMain.KeyUp += (object sender, KeyEventArgs e) =>
-        {
-            if (e.KeyCode != Keys.Apps || f.gridMain.CurrentRow == null) return;
-            Point pos = f.gridMain.GetCellDisplayRectangle(3, f.gridMain.CurrentRow.Index, false).Location;
-            pos.X += 25; pos.Y += 5;
-            ShowEntryContextMenu(pos);
-        };
+        f.gridMain.KeyUp += (object sender, KeyEventArgs e) => ShowGridRowContextMenu(f.gridMain, FillEntryContextMenu, keyEvent: e, keyOpenColumn: 3);
 
         // Handle F5 to refresh
         f.KeyDown += (object sender, KeyEventArgs e) =>
@@ -379,7 +373,7 @@ public static class Program
         }
     }
 
-    static void ShowEntryContextMenu(Point menuPos)
+    static void FillEntryContextMenu(ContextMenuStrip context, int row)
     {
         DataGridViewSelectedRowCollection rows = f.gridMain.SelectedRows;
         if (rows.Count == 0) return;
@@ -391,7 +385,6 @@ public static class Program
             if (File.Exists(en.AbsRestorePath)) noRestoresExist = false; else allRestoresExist = false;
             allStatus |= en.Status;
         }
-        ContextMenuStrip context = new ContextMenuStrip();
         if (allFilesExist && noRestoresExist) context.Items.Add("Restore after commit", Data.icon_restore).Click += (object _o, EventArgs _a) => DoEntryAction(EntryContextMenuAction.RestoreAfterCommit);
         if (allFilesExist && allRestoresExist) context.Items.Add("Restore now", Data.icon_restore).Click += (object _o, EventArgs _a) => DoEntryAction(EntryContextMenuAction.RestoreNow);
         if (singleFile && allFilesExist && allRestoresExist) context.Items.Add("Diff with restore point", Data.icon_restore).Click += (object _o, EventArgs _a) => DoEntryAction(EntryContextMenuAction.DiffRestore);
@@ -407,7 +400,6 @@ public static class Program
         if (singleFile) context.Items.Add("Explore to", Data.icon_explore).Click += (object _o, EventArgs _a) => DoEntryAction(EntryContextMenuAction.ExploreTo);
         if ((allStatus & (FileStatus.DeletedFromIndex | FileStatus.DeletedFromWorkdir)) == 0)
             context.Items.Add("Delete", Data.icon_delete).Click += (object _o, EventArgs _a) => DoEntryAction(EntryContextMenuAction.Delete);
-        context.Show(f.gridMain, menuPos);
     }
 
     static void gridMain_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -417,12 +409,7 @@ public static class Program
         if (e.ColumnIndex == 1) en.IsExpanded ^= true;
         else if (e.ColumnIndex > 1 && e.Button == MouseButtons.Right && e.Clicks == 1)
         {
-            if (!f.gridMain.Rows[e.RowIndex].Selected)
-            {
-                f.gridMain.ClearSelection();
-                f.gridMain.Rows[e.RowIndex].Selected = true;
-            }
-            ShowEntryContextMenu(f.gridMain.PointToClient(Cursor.Position));
+            ShowGridRowContextMenu(f.gridMain, FillEntryContextMenu, mouseEvent: e);
         }
         else if (e.ColumnIndex > 1 && e.Clicks == 2 && e.Button == MouseButtons.Left)
         {
@@ -624,9 +611,10 @@ public static class Program
                     en.RestoreAfterCommit = false;
                 }
             }
-            el.BroadcastListChanged(f.gridMain);
+            f.txtMessage.SelectAll();
         }
-        if (DoPush()) { f.btnOK.Enabled = false; btnRefresh_Click(); }
+        if (DoPush()) { f.btnOK.Enabled = false; btnRefresh_Click(); f.txtMessage.Focus(); }
+        else el.BroadcastListChanged(f.gridMain);
         f.splitMain.Enabled = true;
     }
 
@@ -636,7 +624,7 @@ public static class Program
         el.BroadcastListChanged(f.gridMain);
     }
 
-    static bool DoPush()
+    static bool DoPush(bool force = false)
     {
         if (repo.Head.TrackedBranch.Tip == null)
         {
@@ -664,7 +652,10 @@ public static class Program
             PerformAuthedOperation(AuthedOperation.Push, (LibGit2Sharp.Handlers.CredentialsHandler credentialsProvider) =>
             {
                 PushOptions po = new PushOptions { CredentialsProvider = credentialsProvider, OnPushTransferProgress = OnPushProgress, OnPackBuilderProgress = OnPackProgress };
-                repo.Network.Push(repo.Head, po);
+                if (force)
+                     repo.Network.Push(repo.Network.Remotes.RemoteForName(repo.Head.RemoteName), "+" + repo.Head.CanonicalName + ":" + repo.Head.UpstreamBranchCanonicalName, po);
+                else
+                    repo.Network.Push(repo.Head, po);
             });
             return true;
         }
@@ -855,9 +846,34 @@ public static class Program
         RunDiff(src_path, dst_path);
     }
 
+    static void ShowGridRowContextMenu(DataGridView grid, Action<ContextMenuStrip, int> fill, DataGridViewCellMouseEventArgs mouseEvent = null, KeyEventArgs keyEvent = null, int keyOpenColumn = 0)
+    {
+        Point pos;
+        if (mouseEvent != null)
+        {
+            if (mouseEvent.Button != MouseButtons.Right || mouseEvent.RowIndex < 0 || mouseEvent.RowIndex > grid.RowCount) return;
+            if (!grid.Rows[mouseEvent.RowIndex].Selected)
+            {
+                grid.ClearSelection();
+                grid.Rows[mouseEvent.RowIndex].Selected = true;
+            }
+            pos = grid.PointToClient(Cursor.Position);
+        }
+        else
+        {
+            if (keyEvent.KeyCode != Keys.Apps || grid.CurrentRow == null) return;
+            pos = grid.GetCellDisplayRectangle(keyOpenColumn, grid.CurrentRow.Index, false).Location;
+            pos.X += 25; pos.Y += 5;
+        };
+        ContextMenuStrip context = new ContextMenuStrip();
+        fill(context, (mouseEvent != null ? mouseEvent.RowIndex : grid.CurrentRow.Index));
+        if (context.Items.Count > 0) context.Show(grid, pos);
+    }
+
     static void ShowLog(string filterPath = null)
     {
         FormLog lf = new FormLog();
+        Action lfRefresh = null;
         lf.txtMessage.Font = f.txtMessage.Font;
 
         GridDataList<LogItem> loglist = new GridDataList<LogItem>(), filterloglist = null;
@@ -868,6 +884,24 @@ public static class Program
         lf.gridHistory.AddCol<DataGridViewTextBoxCell>("Parent SHA", "ColParentSHA", 1, "ParentSHA");
         lf.gridHistory.ColumnHeaderMouseClick       += loglist.GridOnColumnHeaderClick;
         lf.gridHistory.ColumnHeaderMouseDoubleClick += loglist.GridOnColumnHeaderClick;
+        Action<ContextMenuStrip, int> gridHistoryFillContextMenu = (ContextMenuStrip context, int row) =>
+        {
+            if (loglist[row].Commit != repo.Head.Tip) return;
+            Commit cprev = repo.Head.Commits.GetElementAt(1);
+            if (cprev == null) return;
+            context.Items.Add("Undo This Last Commit", Data.icon_delete).Click += (object _o, EventArgs _a) =>
+            {
+                if (MessageBox.Show(lf, "Are you sure you want to undo this commit and force push the undo to the remote branch?", "CozyGit - Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No) return;
+                lf.Enabled = f.splitMain.Enabled = false;
+                if (f.txtMessage.Text.Trim() != repo.Head.Tip.Message.Trim()) f.txtMessage.Text = (f.txtMessage.Text.Length > 0 ? f.txtMessage.Text.Trim() + "\n\n" : "") + repo.Head.Tip.Message.Trim();
+                repo.Reset(ResetMode.Soft, cprev);
+                DoPush(true);
+                btnRefresh_Click();
+                lfRefresh();
+            };
+        };
+        lf.gridHistory.CellMouseClick += (object sender, DataGridViewCellMouseEventArgs e) => ShowGridRowContextMenu(lf.gridHistory, gridHistoryFillContextMenu, mouseEvent: e);
+        lf.gridHistory.KeyUp += (object sender, KeyEventArgs e) => ShowGridRowContextMenu(lf.gridHistory, gridHistoryFillContextMenu, keyEvent: e, keyOpenColumn: 1);
 
         GridDataList<LogFileItem> filelist = new GridDataList<LogFileItem>();
         lf.gridFiles.AddCol<DataGridViewImageCell>("", "ColIcon", 0, null);
@@ -882,30 +916,13 @@ public static class Program
             if (e.RowIndex >= 0 && e.RowIndex < filelist.Count && e.Clicks == 2 && e.Button == MouseButtons.Left)
                 filelist[e.RowIndex].Diff();
         };
-        Action<Point, int> gridFileContextMenu = (Point menuPos, int row) =>
+        Action<ContextMenuStrip, int> gridFilesFillContextMenu = (ContextMenuStrip context, int row) =>
         {
-            ContextMenuStrip context = new ContextMenuStrip();
             context.Items.Add("Diff", Data.icon_diff).Click += (object _o, EventArgs _a) => filelist[row].Diff();
             context.Items.Add("Show log", Data.icon_log).Click += (object _o, EventArgs _a) => ShowLog(filelist[row].Path);
-            context.Show(lf.gridFiles, menuPos);
         };
-        lf.gridFiles.CellMouseClick += (object sender, DataGridViewCellMouseEventArgs e) =>
-        {
-            if (e.Button != MouseButtons.Right || e.RowIndex < 0 || e.RowIndex > lf.gridFiles.RowCount) return;
-            if (!lf.gridFiles.Rows[e.RowIndex].Selected)
-            {
-                lf.gridFiles.ClearSelection();
-                lf.gridFiles.Rows[e.RowIndex].Selected = true;
-            }
-            gridFileContextMenu(lf.gridFiles.PointToClient(Cursor.Position), e.RowIndex);
-        };
-        lf.gridFiles.KeyUp += (object sender, KeyEventArgs e) =>
-        {
-            if (e.KeyCode != Keys.Apps || lf.gridFiles.CurrentRow == null) return;
-            Point pos = lf.gridFiles.GetCellDisplayRectangle(1, lf.gridFiles.CurrentRow.Index, false).Location;
-            pos.X += 25; pos.Y += 5;
-            gridFileContextMenu(pos, lf.gridFiles.CurrentRow.Index);
-        };
+        lf.gridFiles.CellMouseClick += (object sender, DataGridViewCellMouseEventArgs e) => ShowGridRowContextMenu(lf.gridFiles, gridFilesFillContextMenu, mouseEvent: e);
+        lf.gridFiles.KeyUp += (object sender, KeyEventArgs e) => ShowGridRowContextMenu(lf.gridFiles, gridFilesFillContextMenu, keyEvent: e, keyOpenColumn: 1);
         lf.gridFiles.KeyDown += (object sender, KeyEventArgs e) =>
         {
             if (e.KeyCode != Keys.Enter || lf.gridFiles.CurrentRow == null) return;
@@ -935,7 +952,7 @@ public static class Program
                 Commit c = ((LogItem)row.DataBoundItem).Commit;
                 sb.Append((sb.Length > 0 ? split : "") + c.Message);
 
-                Commit parent = c.Parents.GetFirstElement();
+                Commit parent = c.Parents.GetElementAt(0);
                 foreach (TreeEntryChanges it in repo.Diff.Compare<TreeChanges>((parent == null ? null : parent.Tree), c.Tree))
                 {
                     int existingIndex;
@@ -985,20 +1002,20 @@ public static class Program
             {
                 if (CommitEnumerator != null) { try { if (!CommitEnumerator.MoveNext()) break; } catch (NotFoundException) { break; /* log with truncated history depth */ } c = CommitEnumerator.Current; }
                 else { if (!LogEntryEnumerator.MoveNext()) break; c = LogEntryEnumerator.Current.Commit; }
-                Commit parent = c.Parents.GetFirstElement();
+                Commit parent = c.Parents.GetElementAt(0);
                 loglist.Add(new LogItem { SHA = c.Sha, Author = c.Author.ToString(), Committer = (c.Author == c.Committer ? "" : c.Committer.ToString()), Date = c.Committer.When, ParentSHA = (parent == null ? "" : parent.Sha), Commit = c });
             }
             if (n > 0) lf.btnShowAll.Enabled = lf.btnNext100.Enabled = false;
             updateFilter();
         };
-
         lf.btnNext100.Click += (object sender, EventArgs e) => GetMoreEntries(100);
         lf.btnShowAll.Click += (object sender, EventArgs e) => GetMoreEntries(int.MaxValue);
-
-        lf.Shown += (object sender, EventArgs e) =>
+        lfRefresh = () =>
         {
             lf.Enabled = false;
 
+            filelist.Clear();
+            loglist.Clear();
             lf.gridFiles.DataSource = filelist;
             lf.gridHistory.DataSource = loglist;
             if (filterPath == null) CommitEnumerator = repo.Commits.QueryBy(new CommitFilter { SortBy = CommitSortStrategies.None }).GetEnumerator();
@@ -1007,6 +1024,8 @@ public static class Program
 
             lf.Enabled = true;
         };
+        lf.Shown += (object sender, EventArgs e) => lfRefresh();
+        lf.KeyDown += (object sender, KeyEventArgs e) => { if (e.KeyCode == Keys.F5) { lfRefresh(); e.Handled = true; } };
 
         LogWindows.Add(lf);
         lf.FormClosed += (object sender, FormClosedEventArgs e) => LogWindows.Remove(lf);
@@ -1038,7 +1057,7 @@ public static class Program
 
         public void Diff()
         {
-            Commit cFrom = MinCommit.Parents.GetFirstElement(), cTo = MaxCommit;
+            Commit cFrom = MinCommit.Parents.GetElementAt(0), cTo = MaxCommit;
             TreeEntry teFrom = (cFrom == null ? null : cFrom[Path]), teTo = (cTo == null ? null : cTo[Path]);
             Blob blobFrom = (teFrom != null && teFrom.TargetType == TreeEntryTargetType.Blob ? (Blob)teFrom.Target : null), blobTo = (teTo != null && teTo.TargetType == TreeEntryTargetType.Blob ? (Blob)teTo.Target : null);
             ShowDiff(blobFrom, blobTo, Path);
@@ -1276,11 +1295,10 @@ static class ExtensionMethods
         g.Columns.Add(res);
     }
 
-    internal static T GetFirstElement<T>(this IEnumerable<T> e)
+    internal static T GetElementAt<T>(this IEnumerable<T> e, int idx)
     {
         if (e == null) return default(T);
-        IEnumerator<T> ee = e.GetEnumerator();
-        return (ee.MoveNext() ? (T)ee.Current : default(T));
+        for (IEnumerator<T> ee = e.GetEnumerator();;) if (!ee.MoveNext()) return default(T); else if (--idx < 0) return (T)ee.Current;
     }
 }
 }
