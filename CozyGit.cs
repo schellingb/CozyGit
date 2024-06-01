@@ -601,6 +601,12 @@ public static class Program
                 f.splitMain.Enabled = true;
                 return;
             }
+
+            // Force re-stage any file that has local changes since staged (for files changed since last btnRefresh_Click)
+            foreach (StatusEntry se in repo.RetrieveStatus(new StatusOptions { IncludeIgnored = false, IncludeUntracked = false, RecurseUntrackedDirs = false }))
+                if (se.State == (FileStatus.NewInIndex | FileStatus.ModifiedInWorkdir) || se.State == (FileStatus.ModifiedInIndex | FileStatus.ModifiedInWorkdir))
+                    { Commands.Unstage(repo, se.FilePath); Commands.Stage(repo, se.FilePath, Entry.DefaultStageOptions); }
+
             Signature author = new Signature(sf.txtAuthorName.Text, sf.txtAuthorEmail.Text, DateTimeOffset.Now);
             Signature committer = new Signature(sf.txtCommitterName.Text, sf.txtCommitterEmail.Text, author.When);
             try { repo.Commit(f.txtMessage.Text, author, committer); }
