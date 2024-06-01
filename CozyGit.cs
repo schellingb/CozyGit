@@ -305,9 +305,7 @@ public static class Program
                 case EntryContextMenuAction.RestoreNow:
                     if (!File.Exists(en.AbsPath) || !File.Exists(en.AbsRestorePath)) continue; // TODO: support restoring after a file was deleted
                     if (!FileEqualContent(en.AbsPath, en.AbsRestorePath) && MessageBox.Show(f, "Are you sure you want to revert '" + en.Path + "' back to the restore point from " + File.GetLastWriteTime(en.AbsRestorePath).ToString() + "?", "CozyGit - Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No) continue;
-                    File.Delete(en.AbsPath);
-                    File.Move(en.AbsRestorePath, en.AbsPath);
-                    en.RestoreAfterCommit = false;
+                    en.Restore();
                     break;
                 case EntryContextMenuAction.DiffRestore:
                     ShowDiff(en.Path + Entry.RestorePointExtension, en.Path);
@@ -604,12 +602,7 @@ public static class Program
             {
                 if (!en.Active) continue;
                 en.Active = false; // set Active not ColActive because we just committed
-                if (en.RestoreAfterCommit && File.Exists(en.AbsRestorePath))
-                {
-                    if (File.Exists(en.AbsPath)) File.Delete(en.AbsPath);
-                    File.Move(en.AbsRestorePath, en.AbsPath);
-                    en.RestoreAfterCommit = false;
-                }
+                if (en.RestoreAfterCommit && File.Exists(en.AbsRestorePath)) en.Restore();
             }
             f.txtMessage.SelectAll();
         }
@@ -1105,6 +1098,15 @@ public static class Program
             Status = repo.RetrieveStatus(Path);
             f.lblStatus.Text = ActiveCount.ToString() + " files selected, " + el.Count.ToString() + " files total";
             f.btnOK.Enabled = (ActiveCount > 0);
+        }
+
+        public void Restore()
+        {
+            try { File.Delete(AbsPath); } catch { }
+            File.Move(AbsRestorePath, AbsPath);
+            File.SetLastWriteTime(AbsPath, DateTime.Now);
+            ModDate = DateTime.Now;
+            RestoreAfterCommit = false;
         }
     }
 
