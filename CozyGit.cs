@@ -8,8 +8,8 @@ using LibGit2Sharp;
 
 [assembly: System.Reflection.AssemblyTitle("CozyGit")]
 [assembly: System.Reflection.AssemblyProduct("CozyGit")]
-[assembly: System.Reflection.AssemblyVersion("0.1.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.1.0.0")]
+[assembly: System.Reflection.AssemblyVersion("0.2.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.2.0.0")]
 [assembly: System.Reflection.AssemblyCopyright("(C) 2024 Bernhard Schelling")]
 [assembly: System.Runtime.InteropServices.ComVisible(false)]
 
