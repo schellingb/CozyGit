@@ -880,8 +880,8 @@ public static class Program
         Action<ContextMenuStrip, int> gridHistoryFillContextMenu = (ContextMenuStrip context, int row) =>
         {
             if (loglist[row].Commit != repo.Head.Tip) return;
-            Commit cprev = repo.Head.Commits.GetElementAt(1);
-            if (cprev == null) return;
+            Commit cprev = null;
+            try { if ((cprev = repo.Commits.QueryBy(new CommitFilter { IncludeReachableFrom = repo.Head, SortBy = CommitSortStrategies.None }).GetElementAt(1)) == null) return; } catch (NotFoundException) { return; /* log with truncated history depth */ }
             context.Items.Add("Undo This Last Commit", Data.icon_delete).Click += (object _o, EventArgs _a) =>
             {
                 if (MessageBox.Show(lf, "Are you sure you want to undo this commit and force push the undo to the remote branch?", "CozyGit - Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No) return;
@@ -994,7 +994,7 @@ public static class Program
             for (Commit c; n > 0; n--)
             {
                 if (CommitEnumerator != null) { try { if (!CommitEnumerator.MoveNext()) break; } catch (NotFoundException) { break; /* log with truncated history depth */ } c = CommitEnumerator.Current; }
-                else { if (!LogEntryEnumerator.MoveNext()) break; c = LogEntryEnumerator.Current.Commit; }
+                else { try { if (!LogEntryEnumerator.MoveNext()) break; } catch (KeyNotFoundException) { break; /* log with truncated history depth */ } c = LogEntryEnumerator.Current.Commit; }
                 Commit parent = c.Parents.GetElementAt(0);
                 loglist.Add(new LogItem { SHA = c.Sha, Author = c.Author.ToString(), Committer = (c.Author == c.Committer ? "" : c.Committer.ToString()), Date = c.Committer.When, ParentSHA = (parent == null ? "" : parent.Sha), Commit = c });
             }
