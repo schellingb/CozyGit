@@ -21,7 +21,7 @@ namespace CozyGit
         internal LinkLabel lnkCheckDeleted;
         internal Button btnSettings;
         internal Button btnPullLatest;
-        internal RichTextBox txtMessage;
+        internal TextBox txtMessage;
         internal ProgressBar Progress;
         private GroupBox groupBox1;
         private GroupBox groupBox2;
@@ -72,7 +72,7 @@ namespace CozyGit
         {
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.txtMessage = new System.Windows.Forms.RichTextBox();
+            this.txtMessage = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.chkShowUnversioned = new System.Windows.Forms.CheckBox();
@@ -133,12 +133,13 @@ namespace CozyGit
             this.txtMessage.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtMessage.DetectUrls = false;
+            this.txtMessage.ShortcutsEnabled = true;
             this.txtMessage.Location = new System.Drawing.Point(6, 19);
+            this.txtMessage.Multiline = true;
+            this.txtMessage.ScrollBars = ScrollBars.Vertical;
             this.txtMessage.Name = "txtMessage";
             this.txtMessage.Size = new System.Drawing.Size(1077, 140);
             this.txtMessage.TabIndex = 0;
-            this.txtMessage.Text = "";
             // 
             // groupBox2
             // 
@@ -556,6 +557,7 @@ namespace CozyGit
             this.Name = "FormCommit";
             this.Text = "CozyGit - File List";
             this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.flowLayoutPanel2.ResumeLayout(false);

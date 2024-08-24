@@ -116,6 +116,16 @@ public static class Program
             if (e.KeyCode == Keys.Enter && e.Control) { btnOK_Click(null, null); e.Handled = true; }
         };
 
+        // Enable support for CTRL+A in multi-line text box
+        f.txtMessage.KeyDown += (object sender, KeyEventArgs e) => { if (e.KeyCode == Keys.A && e.Control) f.txtMessage.SelectAll(); };
+
+        //// Auto enable scroll bars when needed (not perfect because Width/Height also include the controls padding and borders, also would need to be done on size change)
+        //f.txtMessage.TextChanged += (object sender, EventArgs e) =>
+        //{
+        //    using (Graphics g = f.txtMessage.CreateGraphics())
+        //        f.txtMessage.ScrollBars = (g.MeasureString(f.txtMessage.Text, f.txtMessage.Font, f.txtMessage.Width).Height > f.txtMessage.Height ? ScrollBars.Vertical : ScrollBars.None);
+        //};
+
         f.gridMain.ColumnHeaderMouseClick       += el.GridOnColumnHeaderClick;
         f.gridMain.ColumnHeaderMouseDoubleClick += el.GridOnColumnHeaderClick;
         f.gridMain.CellContentClick             += gridMain_CellContentClick;

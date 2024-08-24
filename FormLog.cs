@@ -17,7 +17,7 @@ namespace CozyGit
         internal BetterScrollDataGridView gridFiles;
         internal Button btnShowAll;
         internal Button btnNext100;
-        internal RichTextBox txtMessage;
+        internal TextBox txtMessage;
         internal Label lblFooter;
         internal Button btnClearFilter;
         private Label label1;
@@ -55,7 +55,7 @@ namespace CozyGit
             this.label1 = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.txtMessage = new System.Windows.Forms.RichTextBox();
+            this.txtMessage = new System.Windows.Forms.TextBox();
             this.txtFilter = new System.Windows.Forms.TextBox();
             this.btnOK = new System.Windows.Forms.Button();
             this.gridHistory = new BetterScrollDataGridView();
@@ -152,11 +152,12 @@ namespace CozyGit
             // 
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtMessage.Location = new System.Drawing.Point(0, 0);
+            this.txtMessage.Multiline = true;
             this.txtMessage.Name = "txtMessage";
             this.txtMessage.ReadOnly = true;
             this.txtMessage.Size = new System.Drawing.Size(922, 140);
             this.txtMessage.TabIndex = 0;
-            this.txtMessage.Text = "";
+            this.txtMessage.ScrollBars = ScrollBars.Vertical;
             // 
             // gridFiles
             // 
