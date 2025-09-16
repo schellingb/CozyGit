@@ -6578,6 +6578,8 @@ namespace LibGit2Sharp
         /// The file is <see cref="Conflicted"/> due to a merge.
         /// </summary>
         Conflicted = (1 << 15), /* GIT_STATUS_CONFLICTED */
+
+        UnalteredWithRestorePoint = Unaltered | (1 << 16),
     }
 
     /// <summary>

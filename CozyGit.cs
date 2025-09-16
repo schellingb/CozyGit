@@ -47,6 +47,10 @@ public static class Program
             return;
         }
 
+        // Create global git config file if it doesn't exist
+        string globalGitCfgPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + Path.DirectorySeparatorChar + ".gitconfig";
+        if (!File.Exists(globalGitCfgPath)) File.WriteAllText(globalGitCfgPath, "");
+
         f = new FormCommit();
         f.txtMessage.Font = new Font("Consolas", 9);
         if (f.txtMessage.Font.Name != "Consolas") f.txtMessage.Font = new Font(FontFamily.GenericMonospace, 9);
@@ -113,7 +117,18 @@ public static class Program
         f.KeyDown += (object sender, KeyEventArgs e) =>
         {
             if (e.KeyCode == Keys.F5) { f.btnRefresh.PerformClick(); e.Handled = true; }
-            if (e.KeyCode == Keys.Enter && e.Control) { btnOK_Click(null, null); e.Handled = true; }
+            if (e.KeyCode == Keys.Back && e.Control && f.txtMessage.Focused) // erase one word
+            {
+                e.Handled = e.SuppressKeyPress = true;
+                string t = f.txtMessage.Text; int ss = f.txtMessage.SelectionStart + f.txtMessage.SelectionLength;
+                if (ss > 2 && t[ss-2] == '\r' && t[ss-1] == '\n') { ss -= 2; t = t.Remove(ss, 2); }
+                else if (ss > 1 && t[ss-1] == '\n') { ss -= 1; t = t.Remove(ss, 1); }
+                while (ss > 0 && (t[ss-1] == ' ' || t[ss-1] == ' ')) { ss -= 1; t = t.Remove(ss, 1); }
+                while (ss > 0 && t[ss-1] != ' ') { ss -= 1; t = t.Remove(ss, 1); }
+                f.txtMessage.Text = t; f.txtMessage.SelectionStart = ss; f.txtMessage.SelectionLength = 0;
+            }
+            // We have to use BeginInvoke after setting SuppressKeyPress because otherwise it will insert a newline into the txtMessage box when it's focused
+            if (e.KeyCode == Keys.Enter && e.Control) { e.Handled = e.SuppressKeyPress = true; f.BeginInvoke(new Action(() => { btnOK_Click(null, null); })); }
         };
 
         // Enable support for CTRL+A in multi-line text box
@@ -310,7 +325,7 @@ public static class Program
                 case EntryContextMenuAction.RestoreAfterCommit:
                     if (!File.Exists(en.AbsPath) || File.Exists(en.AbsRestorePath)) continue;
                     File.Copy(en.AbsPath, en.AbsRestorePath);
-                    en.RestoreAfterCommit = true;
+                    en.SetRestoreAfterCommit(true);
                     break;
                 case EntryContextMenuAction.RestoreNow:
                     if (!File.Exists(en.AbsPath) || !File.Exists(en.AbsRestorePath)) continue; // TODO: support restoring after a file was deleted
@@ -324,7 +339,7 @@ public static class Program
                     if (!File.Exists(en.AbsRestorePath)) continue;
                     if (!FileEqualContent(en.AbsPath, en.AbsRestorePath) && MessageBox.Show(f, "Are you sure you want to delete the restore point of '" + en.Path + "' from " + File.GetLastWriteTime(en.AbsRestorePath).ToString() + "?", "CozyGit - Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No) continue;
                     File.Delete(en.AbsRestorePath);
-                    en.RestoreAfterCommit = false;
+                    en.SetRestoreAfterCommit(false);
                     break;
                 case EntryContextMenuAction.Diff:
                     ShowDiff(GetRepoBlob(en.Path, en.Status), en.Path);
@@ -495,7 +510,7 @@ public static class Program
                 if ((s & (FileStatus.NewInIndex | FileStatus.DeletedFromIndex | FileStatus.ModifiedInIndex | FileStatus.RenamedInIndex | FileStatus.TypeChangeInIndex)) != 0)
                     Commands.Unstage(repo, path); // force unstage restore point files
                 path = path.Remove(path.Length - Entry.RestorePointExtension.Length);
-                foreach (Entry e in el) { if (e.Path == path) { e.RestoreAfterCommit = true; goto found; } }
+                foreach (Entry e in el) { if (e.Path == path) { e.SetRestoreAfterCommit(true); goto found; } }
                 restoreAfterCommits.Add(path, true);
                 found: continue;
             }
@@ -522,7 +537,7 @@ public static class Program
             Icon icon = GetCachedIcon(fi);
             el.Add(new Entry { Icon = icon, Active = active, Path = path, Status = s, ModDate = (exists ? (DateTimeOffset)fi.LastWriteTime : DateTimeOffset.MinValue), Size = (exists ? fi.Length : -1), Extension = extension });
             if (active) ActiveCount++;
-            if (restoreAfterCommits.Count > 0 && restoreAfterCommits.ContainsKey(path)) { el[el.Count - 1].RestoreAfterCommit = true; }
+            if (restoreAfterCommits.Count > 0 && restoreAfterCommits.ContainsKey(path)) { el[el.Count - 1].SetRestoreAfterCommit(true); }
         }
 
         //// TODO: Folder rows need to be added (or removed) depending on if sort function is path or something else, maybe add a checkbox "Show folders" to UI
@@ -760,19 +775,23 @@ public static class Program
 
     static void SaveSettingsIfNeeded(Configuration cfg)
     {
-        var cf = _SettingsFormCache;
-        if (cf != null && cf.SetBoolOption != null) { cfg.Set(cf.SetBoolOption, true, ConfigurationLevel.Local); cf.SetBoolOption = null; }
-        if (cf == null || !cf.NeedSave) return;
-        ConfigurationLevel storeLevel = (cf.chkUseGlobalConfig.CheckState == CheckState.Checked ? ConfigurationLevel.Global : ConfigurationLevel.Local);
-        if (cf.chkRemoteUser.Checked     && cf.txtRemoteUser.Text      != "") cfg.Set("cozygit.remoteuser",     cf.txtRemoteUser.Text,     storeLevel); else cfg.UnsetAll("cozygit.remoteuser",     storeLevel);
-        if (cf.chkRemotePassword.Checked && cf.txtRemotePassword.Text  != "") cfg.Set("cozygit.remotepassword", cf.txtRemotePassword.Text, storeLevel); else cfg.UnsetAll("cozygit.remotepassword", storeLevel);
-        if (cf.chkAuthorName.Checked     && cf.txtAuthorName.Text      != "") cfg.Set("cozygit.authorname",     cf.txtAuthorName.Text,     storeLevel); else cfg.UnsetAll("cozygit.authorname",     storeLevel);
-        if (cf.chkAuthorEmail.Checked    && cf.txtAuthorEmail.Text     != "") cfg.Set("cozygit.authoremail",    cf.txtAuthorEmail.Text,    storeLevel); else cfg.UnsetAll("cozygit.authoremail",    storeLevel);
-        if (cf.chkCommitterName.Checked  && cf.txtCommitterName.Text   != "") cfg.Set("cozygit.committername",  cf.txtCommitterName.Text,  storeLevel); else cfg.UnsetAll("cozygit.committername",  storeLevel);
-        if (cf.chkCommitterEmail.Checked && cf.txtCommitterEmail.Text  != "") cfg.Set("cozygit.committeremail", cf.txtCommitterEmail.Text, storeLevel); else cfg.UnsetAll("cozygit.committeremail", storeLevel);
-        if (cf.txtDiffTool.Text != "") cfg.Set("cozygit.difftool", cf.txtDiffTool.Text, ConfigurationLevel.Global); else cfg.UnsetAll("cozygit.difftool", ConfigurationLevel.Global);
-        cfg.Set("cozygit.savedsettings", true, ConfigurationLevel.Local);
-        cf.NeedSave = false;
+        try
+        {
+            var cf = _SettingsFormCache;
+            if (cf != null && cf.SetBoolOption != null) { cfg.Set(cf.SetBoolOption, true, ConfigurationLevel.Local); cf.SetBoolOption = null; }
+            if (cf == null || !cf.NeedSave) return;
+            ConfigurationLevel storeLevel = (cf.chkUseGlobalConfig.CheckState == CheckState.Checked ? ConfigurationLevel.Global : ConfigurationLevel.Local);
+            if (cf.chkRemoteUser.Checked     && cf.txtRemoteUser.Text      != "") cfg.Set("cozygit.remoteuser",     cf.txtRemoteUser.Text,     storeLevel); else cfg.UnsetAll("cozygit.remoteuser",     storeLevel);
+            if (cf.chkRemotePassword.Checked && cf.txtRemotePassword.Text  != "") cfg.Set("cozygit.remotepassword", cf.txtRemotePassword.Text, storeLevel); else cfg.UnsetAll("cozygit.remotepassword", storeLevel);
+            if (cf.chkAuthorName.Checked     && cf.txtAuthorName.Text      != "") cfg.Set("cozygit.authorname",     cf.txtAuthorName.Text,     storeLevel); else cfg.UnsetAll("cozygit.authorname",     storeLevel);
+            if (cf.chkAuthorEmail.Checked    && cf.txtAuthorEmail.Text     != "") cfg.Set("cozygit.authoremail",    cf.txtAuthorEmail.Text,    storeLevel); else cfg.UnsetAll("cozygit.authoremail",    storeLevel);
+            if (cf.chkCommitterName.Checked  && cf.txtCommitterName.Text   != "") cfg.Set("cozygit.committername",  cf.txtCommitterName.Text,  storeLevel); else cfg.UnsetAll("cozygit.committername",  storeLevel);
+            if (cf.chkCommitterEmail.Checked && cf.txtCommitterEmail.Text  != "") cfg.Set("cozygit.committeremail", cf.txtCommitterEmail.Text, storeLevel); else cfg.UnsetAll("cozygit.committeremail", storeLevel);
+            if (cf.txtDiffTool.Text != "") cfg.Set("cozygit.difftool", cf.txtDiffTool.Text, ConfigurationLevel.Global); else cfg.UnsetAll("cozygit.difftool", ConfigurationLevel.Global);
+            cfg.Set("cozygit.savedsettings", true, ConfigurationLevel.Local);
+            cf.NeedSave = false;
+        }
+        catch (Exception e) { ShowException(e, "Unable to write settings"); }
     }
 
     enum AuthedOperation { Clone, Pull, Push };
@@ -953,7 +972,7 @@ public static class Program
                 if (!row.Visible) continue;
                 selectedCount++;
                 Commit c = ((LogItem)row.DataBoundItem).Commit;
-                sb.Append((sb.Length > 0 ? split : "") + c.Message);
+                sb.Append((sb.Length > 0 ? split : "") + c.Message.Replace("\r\n", "\n").Replace("\n", Environment.NewLine));
 
                 Commit parent = c.Parents.GetElementAt(0);
                 foreach (TreeEntryChanges it in repo.Diff.Compare<TreeChanges>((parent == null ? null : parent.Tree), c.Tree))
@@ -997,16 +1016,33 @@ public static class Program
         lf.txtFilter.TextChanged += (object sender, EventArgs e) => updateFilter();
         lf.btnClearFilter.Click += (object sender, EventArgs e) => lf.txtFilter.Text = "";
 
+        #if COZY_GIT_USE_LOGENTRYENUMERATOR
+        // LogEntryEnumerator seems to not be able to iterate beyond certain merge operations
         IEnumerator<LogEntry> LogEntryEnumerator = null;
+        #endif
         IEnumerator<Commit> CommitEnumerator = null;
         Action<int> GetMoreEntries = (int n) =>
         {
-            for (Commit c; n > 0; n--)
+            for (Commit c; n > 0 || loglist.Count == 0;)
             {
+                #if COZY_GIT_USE_LOGENTRYENUMERATOR
                 if (CommitEnumerator != null) { try { if (!CommitEnumerator.MoveNext()) break; } catch (NotFoundException) { break; /* log with truncated history depth */ } c = CommitEnumerator.Current; }
                 else { try { if (!LogEntryEnumerator.MoveNext()) break; } catch (KeyNotFoundException) { break; /* log with truncated history depth */ } c = LogEntryEnumerator.Current.Commit; }
                 Commit parent = c.Parents.GetElementAt(0);
+                #else
+                try { if (!CommitEnumerator.MoveNext()) break; } catch (NotFoundException) { break; /* log with truncated history depth */ } c = CommitEnumerator.Current;
+                Commit parent = c.Parents.GetElementAt(0);
+                if (filterPath != null)
+                {
+                    // LogEntryEnumerator seems to not be able to iterate beyond certain merge operations, so we use regular commit enumerations and filter paths manually
+                    foreach (TreeEntryChanges it in repo.Diff.Compare<TreeChanges>((parent == null ? null : parent.Tree), c.Tree))
+                        if (it.Path == filterPath || it.OldPath == filterPath) goto have;
+                    continue;
+                    have:;
+                }
+                #endif
                 loglist.Add(new LogItem { SHA = c.Sha, Author = c.Author.ToString(), Committer = (c.Author == c.Committer ? "" : c.Committer.ToString()), Date = c.Committer.When, ParentSHA = (parent == null ? "" : parent.Sha), Commit = c });
+                n--;
             }
             if (n > 0) lf.btnShowAll.Enabled = lf.btnNext100.Enabled = false;
             updateFilter();
@@ -1021,8 +1057,12 @@ public static class Program
             loglist.Clear();
             lf.gridFiles.DataSource = filelist;
             lf.gridHistory.DataSource = loglist;
-            if (filterPath == null) CommitEnumerator = repo.Commits.QueryBy(new CommitFilter { SortBy = CommitSortStrategies.None }).GetEnumerator();
+            #if COZY_GIT_USE_LOGENTRYENUMERATOR
+            if (filterPath == null) CommitEnumerator = repo.Commits.QueryBy(new CommitFilter { SortBy = CommitSortStrategies.None, FirstParentOnly = true }).GetEnumerator();
             else LogEntryEnumerator = repo.Commits.QueryBy(filterPath).GetEnumerator();
+            #else
+            CommitEnumerator = repo.Commits.QueryBy(new CommitFilter { SortBy = CommitSortStrategies.None, FirstParentOnly = true }).GetEnumerator();
+            #endif
             GetMoreEntries(100);
 
             lf.Enabled = true;
@@ -1084,7 +1124,7 @@ public static class Program
         {
             switch (Status)
             {
-                case FileStatus.Unaltered: return "unchanged";
+                case FileStatus.Unaltered: return (RestoreAfterCommit ? "unchanged (with restore)" : "unchanged");
                 case FileStatus.NewInWorkdir:case FileStatus.NewInIndex: return "unversioned";
                 case FileStatus.ModifiedInWorkdir:case FileStatus.ModifiedInIndex: return "modified";
                 case FileStatus.DeletedFromWorkdir:case FileStatus.DeletedFromIndex: return "deleted";
@@ -1099,6 +1139,13 @@ public static class Program
         public bool RestoreAfterCommit;
         public string AbsPath { get { return repo.Info.WorkingDirectory + Path.Replace('/', System.IO.Path.DirectorySeparatorChar); } }
         public string AbsRestorePath { get { return AbsPath + RestorePointExtension; } }
+
+        public void SetRestoreAfterCommit(bool v)
+        {
+            if (Status == FileStatus.UnalteredWithRestorePoint && !v) Status = FileStatus.Unaltered;
+            if (Status == FileStatus.Unaltered && v) Status = FileStatus.UnalteredWithRestorePoint;
+            RestoreAfterCommit = v;
+        }
 
         void SetActive(bool v)
         {
@@ -1116,7 +1163,7 @@ public static class Program
             File.Move(AbsRestorePath, AbsPath);
             File.SetLastWriteTime(AbsPath, DateTime.Now);
             ModDate = DateTime.Now;
-            RestoreAfterCommit = false;
+            SetRestoreAfterCommit(false);
         }
     }
 
